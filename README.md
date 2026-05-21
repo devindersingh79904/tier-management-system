@@ -101,4 +101,29 @@ export DB_SHOW_SQL=true
 export DB_FORMAT_SQL=true
 export DB_LOB_NON_CONTEXTUAL_CREATION=true
 export DB_POOL_SIZE=5
+
+# Seeding configuration
+export GLOBAL_SEED_ENABLED=true
+export USER_SEED_ENABLED=true
+export TIER_SEED_ENABLED=true
+export PLAN_SEED_ENABLED=true
+export BENEFIT_SEED_ENABLED=true
+export TIER_CRITERIA_SEED_ENABLED=true
+export BENEFIT_CONFIGURATION_SEED_ENABLED=true
+export USER_MEMBERSHIP_SEED_ENABLED=true
+export PAYMENT_INTENT_SEED_ENABLED=true
 ```
+
+---
+
+## Detailed Documentation
+Refer to the following detailed guides for design decisions, standards, and architecture:
+- [Setup & Configuration Guide](file:///Users/dsp/development/firstclub/loyalty-tier-system/docs/setup-guide.md)
+- [Database Design & Schema](file:///Users/dsp/development/firstclub/loyalty-tier-system/docs/database-design.md)
+- [Database Seeding Strategy](file:///Users/dsp/development/firstclub/loyalty-tier-system/docs/seeding-strategy.md)
+- [Architecture & Layers](file:///Users/dsp/development/firstclub/loyalty-tier-system/docs/architecture.md)
+- [API Design Standards](file:///Users/dsp/development/firstclub/loyalty-tier-system/docs/api-standards.md)
+- [Concurrency & Locking](file:///Users/dsp/development/firstclub/loyalty-tier-system/docs/concurrency.md)
+- [Exception Handling Policy](file:///Users/dsp/development/firstclub/loyalty-tier-system/docs/exception-handling.md)
+- [Logging & Correlation Id Filtering](file:///Users/dsp/development/firstclub/loyalty-tier-system/docs/logging-and-correlation.md)
+
