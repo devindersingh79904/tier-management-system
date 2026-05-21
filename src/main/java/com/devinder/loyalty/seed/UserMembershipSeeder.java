@@ -61,7 +61,7 @@ public class UserMembershipSeeder {
         Instant now = Instant.now();
 
         // 1. Rahul Sharma -> PLATINUM + Yearly
-        userRepository.findByMobileNumber("769655537").ifPresent(user -> {
+        userRepository.findByMobileNumber("7696555538").ifPresent(user -> {
             yearlyOpt.ifPresent(plan -> {
                 platinumOpt.ifPresent(tier -> {
                     memberships.add(UserMembership.builder()
@@ -81,7 +81,7 @@ public class UserMembershipSeeder {
         });
 
         // 2. Aman Verma -> GOLD + Quarterly
-        userRepository.findByMobileNumber("769655538").ifPresent(user -> {
+        userRepository.findByMobileNumber("7696555539").ifPresent(user -> {
             quarterlyOpt.ifPresent(plan -> {
                 goldOpt.ifPresent(tier -> {
                     memberships.add(UserMembership.builder()
@@ -101,7 +101,7 @@ public class UserMembershipSeeder {
         });
 
         // 3. Priya Singh -> SILVER + Monthly
-        userRepository.findByMobileNumber("769655539").ifPresent(user -> {
+        userRepository.findByMobileNumber("7696555540").ifPresent(user -> {
             monthlyOpt.ifPresent(plan -> {
                 silverOpt.ifPresent(tier -> {
                     memberships.add(UserMembership.builder()
@@ -121,7 +121,7 @@ public class UserMembershipSeeder {
         });
 
         // 4. Neha Kapoor -> GOLD + Monthly
-        userRepository.findByMobileNumber("769655540").ifPresent(user -> {
+        userRepository.findByMobileNumber("7696555541").ifPresent(user -> {
             monthlyOpt.ifPresent(plan -> {
                 goldOpt.ifPresent(tier -> {
                     memberships.add(UserMembership.builder()
@@ -141,7 +141,7 @@ public class UserMembershipSeeder {
         });
 
         // 5. Arjun Patel -> SILVER + Monthly
-        userRepository.findByMobileNumber("769655541").ifPresent(user -> {
+        userRepository.findByMobileNumber("7696555542").ifPresent(user -> {
             monthlyOpt.ifPresent(plan -> {
                 silverOpt.ifPresent(tier -> {
                     memberships.add(UserMembership.builder()

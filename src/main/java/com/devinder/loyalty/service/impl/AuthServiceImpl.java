@@ -44,6 +44,9 @@ public class AuthServiceImpl implements AuthService {
         String refreshToken = jwtUtil.generateRefreshToken(user.getMobileNumber());
 
         return AuthResponse.builder()
+                .userId(user.getId())
+                .mobileNumber(user.getMobileNumber())
+                .role(user.getRole().name())
                 .accessToken(accessToken)
                 .refreshToken(refreshToken)
                 .tokenType(SecurityConstants.TOKEN_TYPE)
@@ -66,6 +69,9 @@ public class AuthServiceImpl implements AuthService {
         String refreshToken = jwtUtil.generateRefreshToken(user.getMobileNumber());
 
         return AuthResponse.builder()
+                .userId(user.getId())
+                .mobileNumber(user.getMobileNumber())
+                .role(user.getRole().name())
                 .accessToken(accessToken)
                 .refreshToken(refreshToken)
                 .tokenType(SecurityConstants.TOKEN_TYPE)

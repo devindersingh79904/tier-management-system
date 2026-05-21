@@ -19,7 +19,8 @@ import lombok.Setter;
     name = "membership_tiers",
     indexes = {
         @Index(name = "idx_membership_tiers_name", columnList = "name", unique = true),
-        @Index(name = "idx_membership_tiers_priority", columnList = "priority")
+        @Index(name = "idx_membership_tiers_priority", columnList = "priority"),
+        @Index(name = "idx_membership_tiers_is_active", columnList = "is_active")
     }
 )
 @Getter

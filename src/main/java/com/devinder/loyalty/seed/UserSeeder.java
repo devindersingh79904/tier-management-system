@@ -1,15 +1,15 @@
 package com.devinder.loyalty.seed;
 
-import com.devinder.loyalty.entity.User;
-import com.devinder.loyalty.enums.UserRole;
 import com.devinder.loyalty.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.stereotype.Component;
 
-import java.util.List;
+import java.sql.Timestamp;
+import java.time.Instant;
 
 @Slf4j
 @Component
@@ -18,6 +18,7 @@ public class UserSeeder {
 
     private final UserRepository userRepository;
     private final BCryptPasswordEncoder passwordEncoder;
+    private final JdbcTemplate jdbcTemplate;
 
     @Value("${USER_SEED_ENABLED:false}")
     private boolean enabled;
@@ -35,26 +36,19 @@ public class UserSeeder {
 
         log.info("User seeding started...");
 
-        String defaultPasswordHash = passwordEncoder.encode("password123");
+        String hash = passwordEncoder.encode("123");
+        Timestamp now = Timestamp.from(Instant.now());
 
-        User admin = User.builder()
-                .name("Super Admin")
-                .mobileNumber("769655536")
-                .role(UserRole.ADMIN)
-                .passwordHash(defaultPasswordHash)
-                .cohort("ADMIN_COHORT")
-                .build();
+        String sql = "INSERT INTO users (id, name, mobile_number, password_hash, role, cohort, created_at, updated_at, version) VALUES (?, ?, ?, ?, ?, ?, ?, ?, 0)";
 
-        List<User> users = List.of(
-                admin,
-                User.builder().name("Rahul Sharma").mobileNumber("769655537").role(UserRole.USER).passwordHash(defaultPasswordHash).cohort("MAY_2026").build(),
-                User.builder().name("Aman Verma").mobileNumber("769655538").role(UserRole.USER).passwordHash(defaultPasswordHash).cohort("MAY_2026").build(),
-                User.builder().name("Priya Singh").mobileNumber("769655539").role(UserRole.USER).passwordHash(defaultPasswordHash).cohort("MAY_2026").build(),
-                User.builder().name("Neha Kapoor").mobileNumber("769655540").role(UserRole.USER).passwordHash(defaultPasswordHash).cohort("MAY_2026").build(),
-                User.builder().name("Arjun Patel").mobileNumber("769655541").role(UserRole.USER).passwordHash(defaultPasswordHash).cohort("MAY_2026").build()
-        );
+        jdbcTemplate.update(sql, "U001", "Super Admin",  "7696555536", hash, "SUPER_ADMIN", "ADMIN_COHORT", now, now);
+        jdbcTemplate.update(sql, "U002", "Admin User",   "7696555537", hash, "ADMIN",       "ADMIN_COHORT", now, now);
+        jdbcTemplate.update(sql, "U003", "Rahul Sharma", "7696555538", hash, "USER",        "MAY_2026",     now, now);
+        jdbcTemplate.update(sql, "U004", "Aman Verma",   "7696555539", hash, "USER",        "MAY_2026",     now, now);
+        jdbcTemplate.update(sql, "U005", "Priya Singh",  "7696555540", hash, "USER",        "MAY_2026",     now, now);
+        jdbcTemplate.update(sql, "U006", "Neha Kapoor",  "7696555541", hash, "USER",        "MAY_2026",     now, now);
+        jdbcTemplate.update(sql, "U007", "Arjun Patel",  "7696555542", hash, "USER",        "MAY_2026",     now, now);
 
-        userRepository.saveAll(users);
         log.info("User seeding completed.");
     }
 }

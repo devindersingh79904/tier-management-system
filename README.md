@@ -25,7 +25,27 @@ This project implements a highly scalable, concurrency-safe, and audit-friendly 
     - `id` (String) - standard UUID string generated via standard JPA 3.1 `GenerationType.UUID`.
     - `createdAt` and `updatedAt` - managed automatically via `@EntityListeners(AuditingEntityListener.class)`.
     - `version` - `@Version` optimistic locking to prevent concurrency race conditions on active memberships.
-- **Index-Optimized Performance:** Optimized database performance using explicit table indexes (e.g., UNIQUE index on `mobile_number`, UNIQUE index on `idempotency_key`, index on event `created_at`, index on `transaction_id`, etc.).
+- **Index-Optimized Performance:** Optimized database performance using explicit table indexes (e.g., UNIQUE index on `mobile_number`, UNIQUE index on `idempotency_key`, index on event `created_at`, index on `transaction_id`, and indexes on `membership_tiers`' `priority` and `is_active` fields).
+- **Membership Tier Management Module:** End-to-end management of loyalty tiers:
+  - Create, read, update, and soft delete membership tiers.
+  - Programmatic uniqueness validation for tier `name` and `priority` globally (throwing `409 Conflict` on duplicates).
+  - Validation check preventing deletion or deactivation of any tier that has active customer memberships (`status = ACTIVE`), throwing a `409 Conflict` with the message `"Cannot deactivate tier because active memberships exist."`.
+  - Endpoint-level security requiring `@PreAuthorize("isAuthenticated()")` for user-access GET endpoints, and `@PreAuthorize("hasRole('ADMIN')")` for create, update, and delete endpoints.
+  - Complete OpenAPI swagger schema polish using `@Schema` annotations on all tier requests and response DTOs.
+
+---
+
+## API Endpoints (Membership Tier Management)
+
+The Membership Tier management endpoints are exposed under `/api/v1/tiers`:
+
+| Method | Endpoint | Access Control | Description |
+| :--- | :--- | :--- | :--- |
+| **POST** | `/api/v1/tiers` | `hasRole('ADMIN')` | Create a new membership tier. Requires unique `name` and `priority`. |
+| **PUT** | `/api/v1/tiers/{id}` | `hasRole('ADMIN')` | Update details of a tier. Enforces uniqueness and prevents deactivating if active memberships exist. |
+| **GET** | `/api/v1/tiers/{id}` | `isAuthenticated()` | Retrieve details of a specific membership tier by UUID. |
+| **GET** | `/api/v1/tiers` | `isAuthenticated()` | List all membership tiers paginated (supports `page`, `size`, `sort`). |
+| **DELETE** | `/api/v1/tiers/{id}` | `hasRole('ADMIN')` | Soft delete/deactivate a tier. Blocked if active memberships exist. |
 
 ---
 
@@ -103,7 +123,7 @@ export DB_FORMAT_SQL=true
 export DB_LOB_NON_CONTEXTUAL_CREATION=true
 export DB_POOL_SIZE=5
 
-# Seeding configuration
+# Seeding configuration (Enabling global seeding will automatically clear the target tables before populating fresh data)
 export GLOBAL_SEED_ENABLED=true
 export USER_SEED_ENABLED=true
 export TIER_SEED_ENABLED=true

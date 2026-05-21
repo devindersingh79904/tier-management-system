@@ -21,8 +21,10 @@ public class MessageConstants {
     // Exception / Concurrency messages
     public static final String CONFLICT_LOCKING = "The resource was updated by another process. Used optimistic locking to avoid concurrent subscription update conflicts.";
     public static final String TIER_NAME_EXISTS = "Loyalty tier with name '%s' already exists";
-    public static final String TIER_ID_NOT_FOUND = "Loyalty tier with ID %d not found";
+    public static final String TIER_ID_NOT_FOUND = "Loyalty tier with ID %s not found";
     public static final String TIER_NAME_NOT_FOUND = "Loyalty tier with name '%s' not found";
+    public static final String TIER_PRIORITY_EXISTS = "Loyalty tier with priority '%d' already exists";
+    public static final String TIER_HAS_ACTIVE_MEMBERSHIPS = "Cannot deactivate tier because active memberships exist";
 
     // Validation messages
     public static final String VAL_TIER_NAME_REQUIRED = "Tier name is required";
