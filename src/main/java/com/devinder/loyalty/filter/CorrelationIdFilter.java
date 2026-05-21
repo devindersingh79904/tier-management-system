@@ -35,7 +35,7 @@ public class CorrelationIdFilter extends OncePerRequestFilter {
         response.setHeader(HeaderConstants.CORRELATION_ID, correlationId);
         request.setAttribute(CorrelationIdContext.MDC_KEY, correlationId);
 
-        ContentCachingRequestWrapper requestWrapper = new ContentCachingRequestWrapper(request);
+        ContentCachingRequestWrapper requestWrapper = new ContentCachingRequestWrapper(request, 1024 * 1024);
         ContentCachingResponseWrapper responseWrapper = new ContentCachingResponseWrapper(response);
 
         long startTime = System.currentTimeMillis();
