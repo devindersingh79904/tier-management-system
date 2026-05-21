@@ -9,6 +9,10 @@ public class MessageConstants {
     public static final String INTERNAL_SERVER_ERROR = "An unexpected error occurred. Please try again later.";
     public static final String VALIDATION_ERROR = "Input validation failed. Please check details.";
 
+    // Authentication operations
+    public static final String SIGNUP_SUCCESS = "User registered successfully";
+    public static final String LOGIN_SUCCESS = "User logged in successfully";
+
     // Loyalty Tier operations
     public static final String TIER_CREATED = "Loyalty tier created successfully";
     public static final String TIER_UPDATED = "Loyalty tier updated successfully";

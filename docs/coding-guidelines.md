@@ -134,3 +134,16 @@ We adhere strictly to the classic **Controller → Service → Repository** laye
 *   **MapStruct Guidelines:**
     *   Mappers must declare `componentModel = "spring"`.
     *   Maintain strict mapping configurations without writing manual loops.
+
+---
+
+## 12. Security & Authorization
+
+*   **Stateless Authentication:** All authentication must be stateless using JWT (JSON Web Tokens). No HTTP sessions are stored on the server.
+*   **Token Expiry & Configuration:** Token lifetimes (Access and Refresh tokens) and the cryptographic signing secret must be loaded dynamically from environment variables (`.env`) and never hardcoded.
+*   **Security Config:** Configure Spring Security 6 using the modern lambda-based DSL. Register the custom `JwtAuthenticationFilter` before `UsernamePasswordAuthenticationFilter`.
+*   **Unified Error Serialization:** Use `CustomAuthenticationEntryPoint` to serialize authentication exceptions into standard JSON `ApiResponse` objects with an HTTP `401 Unauthorized` status.
+*   **Role-Based Access Control (RBAC):** 
+    *   Map user roles (`USER`, `ADMIN`, `SUPER_ADMIN`) in the `SecurityContext` with the `ROLE_` prefix (e.g. `ROLE_USER`, `ROLE_ADMIN`, `ROLE_SUPER_ADMIN`).
+    *   Secure protected endpoints using method-level security via `@PreAuthorize("hasRole('ADMIN')")` or by specifying endpoint authorization rules in `SecurityFilterChain`.
+

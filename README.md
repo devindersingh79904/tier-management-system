@@ -9,6 +9,7 @@ This project implements a highly scalable, concurrency-safe, and audit-friendly 
 ## Features & Architecture
 
 - **Clean & Modular Design:** Standardized package layout (`config`, `controller`, `service`, `repository`, `entity`, `dto`, `mapper`, `exception`, `filter`, `enums`, `constants`, `util`).
+- **Stateless Authentication & Authorization:** Implements stateless session management using Spring Security 6 and JSON Web Tokens (JWT). Supports roles (`USER`, `ADMIN`, `SUPER_ADMIN`) and secure route-based and method-level access control.
 - **JPA Entity Layer (9 Core Tables):**
   - `users`: Authenticated users uniquely identified by `mobileNumber`. Passwords are encrypted using BCrypt (never stored in plain text).
   - `membership_tiers`: Dynamic, admin-configurable loyalty levels (e.g. `SILVER`, `GOLD`, `PLATINUM`) using a sorting `priority`.
@@ -112,6 +113,11 @@ export TIER_CRITERIA_SEED_ENABLED=true
 export BENEFIT_CONFIGURATION_SEED_ENABLED=true
 export USER_MEMBERSHIP_SEED_ENABLED=true
 export PAYMENT_INTENT_SEED_ENABLED=true
+
+# JWT Token configuration
+export JWT_SECRET=9a4f2c8d3b7a1e5f8c6b2a1d0f9e8d7c6b5a4f3e2d1c0b9a8f7e6d5c4b3a2f1e
+export ACCESS_TOKEN_EXPIRY_MINUTES=300
+export REFRESH_TOKEN_EXPIRY_DAYS=30
 ```
 
 ---
@@ -126,4 +132,8 @@ Refer to the following detailed guides for design decisions, standards, and arch
 - [Concurrency & Locking](file:///Users/dsp/development/firstclub/loyalty-tier-system/docs/concurrency.md)
 - [Exception Handling Policy](file:///Users/dsp/development/firstclub/loyalty-tier-system/docs/exception-handling.md)
 - [Logging & Correlation Id Filtering](file:///Users/dsp/development/firstclub/loyalty-tier-system/docs/logging-and-correlation.md)
+- [Security Architecture](file:///Users/dsp/development/firstclub/loyalty-tier-system/docs/security-architecture.md)
+- [JWT Token Strategy](file:///Users/dsp/development/firstclub/loyalty-tier-system/docs/jwt-strategy.md)
+- [Authentication flow](file:///Users/dsp/development/firstclub/loyalty-tier-system/docs/authentication-flow.md)
+- [API Guidelines - Authentication](file:///Users/dsp/development/firstclub/loyalty-tier-system/docs/api-guidelines.md)
 
