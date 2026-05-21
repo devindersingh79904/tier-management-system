@@ -40,7 +40,8 @@ public class AuthServiceImpl implements AuthService {
 
         user = userRepository.save(user);
 
-        String accessToken = jwtUtil.generateAccessToken(user.getId(), user.getMobileNumber(), user.getRole().name());
+        String accessToken = jwtUtil.generateAccessToken(
+                user.getId(), user.getMobileNumber(), user.getRole().name());
         String refreshToken = jwtUtil.generateRefreshToken(user.getMobileNumber());
 
         return AuthResponse.builder()
@@ -65,7 +66,8 @@ public class AuthServiceImpl implements AuthService {
             throw new UnauthorizedException(SecurityConstants.INVALID_CREDENTIALS);
         }
 
-        String accessToken = jwtUtil.generateAccessToken(user.getId(), user.getMobileNumber(), user.getRole().name());
+        String accessToken = jwtUtil.generateAccessToken(
+                user.getId(), user.getMobileNumber(), user.getRole().name());
         String refreshToken = jwtUtil.generateRefreshToken(user.getMobileNumber());
 
         return AuthResponse.builder()

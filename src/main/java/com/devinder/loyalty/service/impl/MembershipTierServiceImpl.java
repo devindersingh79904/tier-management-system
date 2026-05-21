@@ -35,11 +35,13 @@ public class MembershipTierServiceImpl implements MembershipTierService {
         log.info("Creating membership tier: {}", request.getName());
 
         if (membershipTierRepository.existsByName(request.getName())) {
-            throw new ConflictException(String.format(MessageConstants.TIER_NAME_EXISTS, request.getName()));
+            throw new ConflictException(
+                    String.format(MessageConstants.TIER_NAME_EXISTS, request.getName()));
         }
 
         if (membershipTierRepository.existsByPriority(request.getPriority())) {
-            throw new ConflictException(String.format(MessageConstants.TIER_PRIORITY_EXISTS, request.getPriority()));
+            throw new ConflictException(
+                    String.format(MessageConstants.TIER_PRIORITY_EXISTS, request.getPriority()));
         }
 
         MembershipTier tier = membershipTierMapper.toEntity(request);
@@ -53,19 +55,23 @@ public class MembershipTierServiceImpl implements MembershipTierService {
         log.info("Updating membership tier: {}", id);
 
         MembershipTier tier = membershipTierRepository.findById(id)
-                .orElseThrow(() -> new ResourceNotFoundException(String.format(MessageConstants.TIER_ID_NOT_FOUND, id)));
+                .orElseThrow(() -> new ResourceNotFoundException(
+                        String.format(MessageConstants.TIER_ID_NOT_FOUND, id)));
 
         if (membershipTierRepository.existsByNameAndIdNot(request.getName(), id)) {
-            throw new ConflictException(String.format(MessageConstants.TIER_NAME_EXISTS, request.getName()));
+            throw new ConflictException(
+                    String.format(MessageConstants.TIER_NAME_EXISTS, request.getName()));
         }
 
         if (membershipTierRepository.existsByPriorityAndIdNot(request.getPriority(), id)) {
-            throw new ConflictException(String.format(MessageConstants.TIER_PRIORITY_EXISTS, request.getPriority()));
+            throw new ConflictException(
+                    String.format(MessageConstants.TIER_PRIORITY_EXISTS, request.getPriority()));
         }
 
         // If tier was active and request is trying to deactivate it, verify no active memberships exist
         if (Boolean.TRUE.equals(tier.getIsActive()) && Boolean.FALSE.equals(request.getIsActive())) {
-            if (userMembershipRepository.existsByMembershipTierIdAndStatus(id, MembershipStatus.ACTIVE)) {
+            if (userMembershipRepository.existsByMembershipTierIdAndStatus(
+                    id, MembershipStatus.ACTIVE)) {
                 throw new ConflictException(MessageConstants.TIER_HAS_ACTIVE_MEMBERSHIPS);
             }
         }
@@ -79,7 +85,8 @@ public class MembershipTierServiceImpl implements MembershipTierService {
     @Transactional(readOnly = true)
     public MembershipTierResponse getTierById(String id) {
         MembershipTier tier = membershipTierRepository.findById(id)
-                .orElseThrow(() -> new ResourceNotFoundException(String.format(MessageConstants.TIER_ID_NOT_FOUND, id)));
+                .orElseThrow(() -> new ResourceNotFoundException(
+                        String.format(MessageConstants.TIER_ID_NOT_FOUND, id)));
         return membershipTierMapper.toResponse(tier);
     }
 
@@ -97,10 +104,12 @@ public class MembershipTierServiceImpl implements MembershipTierService {
         log.info("Deleting membership tier: {}", id);
 
         MembershipTier tier = membershipTierRepository.findById(id)
-                .orElseThrow(() -> new ResourceNotFoundException(String.format(MessageConstants.TIER_ID_NOT_FOUND, id)));
+                .orElseThrow(() -> new ResourceNotFoundException(
+                        String.format(MessageConstants.TIER_ID_NOT_FOUND, id)));
 
         // Verify no active memberships exist before deactivating/deleting
-        if (userMembershipRepository.existsByMembershipTierIdAndStatus(id, MembershipStatus.ACTIVE)) {
+        if (userMembershipRepository.existsByMembershipTierIdAndStatus(
+                id, MembershipStatus.ACTIVE)) {
             throw new ConflictException(MessageConstants.TIER_HAS_ACTIVE_MEMBERSHIPS);
         }
 

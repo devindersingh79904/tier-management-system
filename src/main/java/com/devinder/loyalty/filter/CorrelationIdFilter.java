@@ -23,9 +23,11 @@ import java.util.UUID;
 public class CorrelationIdFilter extends OncePerRequestFilter {
 
     @Override
-    protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain filterChain)
-            throws ServletException, IOException {
-        
+    protected void doFilterInternal(
+            HttpServletRequest request,
+            HttpServletResponse response,
+            FilterChain filterChain) throws ServletException, IOException {
+
         String correlationId = request.getHeader(HeaderConstants.CORRELATION_ID);
         if (correlationId == null || correlationId.trim().isEmpty()) {
             correlationId = UUID.randomUUID().toString();
@@ -41,9 +43,9 @@ public class CorrelationIdFilter extends OncePerRequestFilter {
         long startTime = System.currentTimeMillis();
 
         try {
-            log.info("Incoming Request: {} {} {}", 
-                     requestWrapper.getMethod(), 
-                     requestWrapper.getRequestURI(), 
+            log.info("Incoming Request: {} {} {}",
+                     requestWrapper.getMethod(),
+                     requestWrapper.getRequestURI(),
                      requestWrapper.getQueryString() != null ? "?" + requestWrapper.getQueryString() : "");
 
             filterChain.doFilter(requestWrapper, responseWrapper);
@@ -58,9 +60,9 @@ public class CorrelationIdFilter extends OncePerRequestFilter {
 
             // Retrieve response body (if any was written during processing)
             String resBody = getResponseBody(responseWrapper);
-            log.info("Outgoing Response: {} {} ({}ms)", 
-                     responseWrapper.getStatus(), 
-                     requestWrapper.getRequestURI(), 
+            log.info("Outgoing Response: {} {} ({}ms)",
+                     responseWrapper.getStatus(),
+                     requestWrapper.getRequestURI(),
                      duration);
             if (!resBody.trim().isEmpty()) {
                 log.debug("Response Body: {}", resBody);
@@ -76,7 +78,10 @@ public class CorrelationIdFilter extends OncePerRequestFilter {
         byte[] buf = request.getContentAsByteArray();
         if (buf.length > 0) {
             try {
-                return new String(buf, 0, buf.length, request.getCharacterEncoding() != null ? request.getCharacterEncoding() : StandardCharsets.UTF_8.name());
+                String encoding = request.getCharacterEncoding() != null
+                        ? request.getCharacterEncoding()
+                        : StandardCharsets.UTF_8.name();
+                return new String(buf, 0, buf.length, encoding);
             } catch (Exception e) {
                 return ErrorConstants.REQ_BODY_READ_ERROR;
             }
@@ -88,7 +93,10 @@ public class CorrelationIdFilter extends OncePerRequestFilter {
         byte[] buf = response.getContentAsByteArray();
         if (buf.length > 0) {
             try {
-                return new String(buf, 0, buf.length, response.getCharacterEncoding() != null ? response.getCharacterEncoding() : StandardCharsets.UTF_8.name());
+                String encoding = response.getCharacterEncoding() != null
+                        ? response.getCharacterEncoding()
+                        : StandardCharsets.UTF_8.name();
+                return new String(buf, 0, buf.length, encoding);
             } catch (Exception e) {
                 return ErrorConstants.RES_BODY_READ_ERROR;
             }

@@ -16,6 +16,14 @@ import java.util.List;
 @RequiredArgsConstructor
 public class MembershipPlanSeeder {
 
+    private static final int MONTHLY_DURATION = 1;
+    private static final int QUARTERLY_DURATION = 3;
+    private static final int YEARLY_DURATION = 1;
+
+    private static final long MONTHLY_PRICE = 19900L; // ₹199.00
+    private static final long QUARTERLY_PRICE = 49900L; // ₹499.00
+    private static final long YEARLY_PRICE = 149900L; // ₹1499.00
+
     private final MembershipPlanRepository membershipPlanRepository;
 
     @Value("${PLAN_SEED_ENABLED:false}")
@@ -37,25 +45,25 @@ public class MembershipPlanSeeder {
         List<MembershipPlan> plans = List.of(
                 MembershipPlan.builder()
                         .name("Monthly Plan")
-                        .duration(1)
+                        .duration(MONTHLY_DURATION)
                         .durationUnit(DurationUnit.MONTH)
-                        .basePrice(19900L) // ₹199.00
+                        .basePrice(MONTHLY_PRICE)
                         .currency(CurrencyType.INR)
                         .isActive(true)
                         .build(),
                 MembershipPlan.builder()
                         .name("Quarterly Plan")
-                        .duration(3)
+                        .duration(QUARTERLY_DURATION)
                         .durationUnit(DurationUnit.MONTH)
-                        .basePrice(49900L) // ₹499.00
+                        .basePrice(QUARTERLY_PRICE)
                         .currency(CurrencyType.INR)
                         .isActive(true)
                         .build(),
                 MembershipPlan.builder()
                         .name("Yearly Plan")
-                        .duration(1)
+                        .duration(YEARLY_DURATION)
                         .durationUnit(DurationUnit.YEAR)
-                        .basePrice(149900L) // ₹1499.00
+                        .basePrice(YEARLY_PRICE)
                         .currency(CurrencyType.INR)
                         .isActive(true)
                         .build()

@@ -12,6 +12,7 @@ import org.springframework.security.core.AuthenticationException;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
+import org.springframework.web.servlet.resource.NoResourceFoundException;
 
 import java.util.List;
 import java.util.stream.Collectors;
@@ -56,7 +57,7 @@ public class GlobalExceptionHandler {
                 .collect(Collectors.toList());
 
         log.warn("Validation failed: {}", errors);
-        
+
         ApiResponse<Void> response = ApiResponse.error(
                 errors,
                 MessageConstants.VALIDATION_ERROR,
@@ -68,7 +69,7 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(ObjectOptimisticLockingFailureException.class)
     public ResponseEntity<ApiResponse<Void>> handleOptimisticLockingFailure(ObjectOptimisticLockingFailureException ex) {
         log.error("Concurrent update conflict (optimistic lock failure): {}", ex.getMessage());
-        
+
         ApiResponse<Void> response = ApiResponse.error(
                 MessageConstants.CONFLICT_LOCKING,
                 ErrorConstants.CONFLICT,
@@ -77,10 +78,10 @@ public class GlobalExceptionHandler {
         return new ResponseEntity<>(response, HttpStatus.CONFLICT);
     }
 
-    @ExceptionHandler(org.springframework.web.servlet.resource.NoResourceFoundException.class)
-    public ResponseEntity<ApiResponse<Void>> handleNoResourceFoundException(org.springframework.web.servlet.resource.NoResourceFoundException ex) {
+    @ExceptionHandler(NoResourceFoundException.class)
+    public ResponseEntity<ApiResponse<Void>> handleNoResourceFoundException(NoResourceFoundException ex) {
         log.warn("Resource not found: {}", ex.getMessage());
-        
+
         ApiResponse<Void> response = ApiResponse.error(
                 ErrorConstants.RESOURCE_NOT_FOUND,
                 ex.getMessage(),
@@ -92,7 +93,7 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(Exception.class)
     public ResponseEntity<ApiResponse<Void>> handleGenericException(Exception ex) {
         log.error("Unexpected server error: ", ex);
-        
+
         ApiResponse<Void> response = ApiResponse.error(
                 ErrorConstants.SYSTEM_ERROR,
                 MessageConstants.INTERNAL_SERVER_ERROR,

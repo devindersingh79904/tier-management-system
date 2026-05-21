@@ -21,12 +21,14 @@ public class MembershipBenefitSeeder {
 
     public void seed() {
         if (!enabled) {
-            log.info("Skipping membership benefit seeding because BENEFIT_SEED_ENABLED=false");
+            log.info("Skipping membership benefit seeding because "
+                    + "BENEFIT_SEED_ENABLED=false");
             return;
         }
 
         if (membershipBenefitRepository.count() > 0) {
-            log.info("Skipping membership benefit seeding because benefits already exist.");
+            log.info("Skipping membership benefit seeding because "
+                    + "benefits already exist.");
             return;
         }
 
@@ -35,22 +37,26 @@ public class MembershipBenefitSeeder {
         List<MembershipBenefit> benefits = List.of(
                 MembershipBenefit.builder()
                         .name("FREE_DELIVERY")
-                        .description("No delivery fees on orders above a dynamic threshold.")
+                        .description("No delivery fees on orders above a "
+                                + "dynamic threshold.")
                         .isActive(true)
                         .build(),
                 MembershipBenefit.builder()
                         .name("PRIORITY_SUPPORT")
-                        .description("24/7 dedicated support phone line and rapid chat response times.")
+                        .description("24/7 dedicated support phone line and "
+                                + "rapid chat response times.")
                         .isActive(true)
                         .build(),
                 MembershipBenefit.builder()
                         .name("EARLY_ACCESS")
-                        .description("First access to exclusive product launches and seasonal sales.")
+                        .description("First access to exclusive product "
+                                + "launches and seasonal sales.")
                         .isActive(true)
                         .build(),
                 MembershipBenefit.builder()
                         .name("EXTRA_DISCOUNT")
-                        .description("Additional percentage discounts applied on checkouts.")
+                        .description("Additional percentage discounts "
+                                + "applied on checkouts.")
                         .isActive(true)
                         .build()
         );
