@@ -3,7 +3,6 @@ package com.devinder.loyalty.seed;
 import com.devinder.loyalty.entity.MembershipEvent;
 import com.devinder.loyalty.entity.MembershipPlan;
 import com.devinder.loyalty.entity.MembershipTier;
-import com.devinder.loyalty.entity.User;
 import com.devinder.loyalty.entity.UserMembership;
 import com.devinder.loyalty.enums.MembershipEventType;
 import com.devinder.loyalty.enums.MembershipStatus;
