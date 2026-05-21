@@ -35,17 +35,34 @@ This project implements a highly scalable, concurrency-safe, and audit-friendly 
 
 ---
 
-## API Endpoints (Membership Tier Management)
+## API Endpoints
 
-The Membership Tier management endpoints are exposed under `/api/v1/tiers`:
+The Loyalty Tier System APIs are partitioned into Public (Auth), User Self-Service, and Admin groups:
 
+### Public / Authentication APIs
 | Method | Endpoint | Access Control | Description |
 | :--- | :--- | :--- | :--- |
-| **POST** | `/api/v1/tiers` | `hasRole('ADMIN')` | Create a new membership tier. Requires unique `name` and `priority`. |
-| **PUT** | `/api/v1/tiers/{id}` | `hasRole('ADMIN')` | Update details of a tier. Enforces uniqueness and prevents deactivating if active memberships exist. |
-| **GET** | `/api/v1/tiers/{id}` | `isAuthenticated()` | Retrieve details of a specific membership tier by UUID. |
-| **GET** | `/api/v1/tiers` | `isAuthenticated()` | List all membership tiers paginated (supports `page`, `size`, `sort`). |
-| **DELETE** | `/api/v1/tiers/{id}` | `hasRole('ADMIN')` | Soft delete/deactivate a tier. Blocked if active memberships exist. |
+| **POST** | `/api/v1/auth/signup` | Public / Unauthenticated | Create a new user profile with default `USER` role. |
+| **POST** | `/api/v1/auth/login` | Public / Unauthenticated | Authenticate mobile/password credentials and return JWTs. |
+
+### User Self-Service APIs
+| Method | Endpoint | Access Control | Description |
+| :--- | :--- | :--- | :--- |
+| **GET** | `/api/v1/me/profile` | `isAuthenticated()` | Retrieve details of the currently authenticated user. |
+| **GET** | `/api/v1/me/memberships` | `isAuthenticated()` | Retrieve all memberships for the logged-in user context. |
+| **GET** | `/api/v1/tiers` | `isAuthenticated()` | List active membership tiers paginated (supports `page`, `size`, `sort`). |
+| **GET** | `/api/v1/tiers/{id}` | `isAuthenticated()` | Retrieve a specific membership tier by UUID. |
+
+### Privileged Admin APIs
+| Method | Endpoint | Access Control | Description |
+| :--- | :--- | :--- | :--- |
+| **POST** | `/api/v1/admin/tiers` | `ADMIN` / `SUPER_ADMIN` | Create a new membership tier. Requires unique name/priority. |
+| **PUT** | `/api/v1/admin/tiers/{id}` | `ADMIN` / `SUPER_ADMIN` | Update details of a tier. Enforces uniqueness. |
+| **DELETE** | `/api/v1/admin/tiers/{id}` | `ADMIN` / `SUPER_ADMIN` | Soft delete/deactivate a tier. Blocked if active memberships exist. |
+| **POST** | `/api/v1/admin/plans` | `ADMIN` / `SUPER_ADMIN` | Create a new billing plan with a unique name. |
+| **GET** | `/api/v1/admin/plans` | `ADMIN` / `SUPER_ADMIN` | List all available billing plans. |
+| **GET** | `/api/v1/admin/memberships` | `ADMIN` / `SUPER_ADMIN` | List all user membership records in the system. |
+
 
 ---
 
@@ -155,5 +172,8 @@ Refer to the following detailed guides for design decisions, standards, and arch
 - [Security Architecture](file:///Users/dsp/development/firstclub/loyalty-tier-system/docs/security-architecture.md)
 - [JWT Token Strategy](file:///Users/dsp/development/firstclub/loyalty-tier-system/docs/jwt-strategy.md)
 - [Authentication flow](file:///Users/dsp/development/firstclub/loyalty-tier-system/docs/authentication-flow.md)
-- [API Guidelines - Authentication](file:///Users/dsp/development/firstclub/loyalty-tier-system/docs/api-guidelines.md)
+- [API Guidelines - Authentication & Authorization](file:///Users/dsp/development/firstclub/loyalty-tier-system/docs/api-guidelines.md)
+- [Role Access Matrix](file:///Users/dsp/development/firstclub/loyalty-tier-system/docs/role-access-matrix.md)
+- [Security Guide](file:///Users/dsp/development/firstclub/loyalty-tier-system/docs/security-guide.md)
+
 

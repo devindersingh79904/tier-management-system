@@ -11,5 +11,6 @@ import java.util.List;
 public interface UserMembershipRepository extends JpaRepository<UserMembership, String> {
     boolean existsByMembershipTierIdAndStatus(String tierId, MembershipStatus status);
     List<UserMembership> findByMembershipTierNameStartingWith(String prefix);
+    List<UserMembership> findByUserId(String userId);
 }
 

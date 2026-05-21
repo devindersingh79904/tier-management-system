@@ -25,10 +25,21 @@ Consistency in naming improves readability and reduces cognitive load when navig
 We adhere strictly to the classic **Controller → Service → Repository** layered architecture:
 
 ### Controller Layer (`controller`)
-*   **Thin Controllers:** Controllers must remain extremely thin. Their sole responsibility is handling HTTP request parsing, routing, validation, and invoking service methods.
-*   **No Business Logic:** Absolutely **no business logic** is allowed in the Controller layer.
+*   **Package Subdivisions:** To separate concerns, controllers must be grouped into dedicated sub-packages:
+    *   `admin` package: Privileged operations for administrators (e.g. `/api/v1/admin/...`).
+    *   `user` package: Authenticated customer self-service operations (e.g. `/api/v1/me/...` or `/api/v1/...` read-only).
+    *   `auth` package: Public endpoints exclusively for authentication and sessions (e.g. `/api/v1/auth/...`).
+*   **No Mixed Endpoints:** Never mix admin and user endpoints within the same controller class.
+*   **Route Naming Prefixes:**
+    *   Use `/admin` prefix for all privileged APIs.
+    *   Use `/me` prefix for all authenticated user self-service APIs.
+*   **Thin Controllers:** Controllers must remain extremely thin. Their sole responsibility is handling HTTP request parsing, routing, validation, and invoking service methods. They must only handle:
+    *   Validation of request parameters/body.
+    *   Request mapping and endpoint definitions.
+    *   Response wrapping and setting proper HTTP status codes.
+*   **No Business Logic:** Absolutely **no business logic** is allowed in the Controller layer; all business decisions, rules, and logic must reside in the Service layer.
 *   **Return Type:** Controllers must return `ResponseEntity<?>` (specifically using typed envelopes like `ResponseEntity<ApiResponse<DTO>>`).
-*   **Validation:** Must enforce early request validation using `@Valid` or `@Validated` on request bodies and parameters.
+*   **Validation:** Enforce early request validation using `@Valid` or `@Validated` on request bodies and parameters.
 *   **Response Wrapping:** Standardize all API responses using a centralized response wrapper structure (see `api-standards.md`).
 
 ### Service Layer (`service` / `service/impl`)
@@ -145,5 +156,9 @@ We adhere strictly to the classic **Controller → Service → Repository** laye
 *   **Unified Error Serialization:** Use `CustomAuthenticationEntryPoint` to serialize authentication exceptions into standard JSON `ApiResponse` objects with an HTTP `401 Unauthorized` status.
 *   **Role-Based Access Control (RBAC):** 
     *   Map user roles (`USER`, `ADMIN`, `SUPER_ADMIN`) in the `SecurityContext` with the `ROLE_` prefix (e.g. `ROLE_USER`, `ROLE_ADMIN`, `ROLE_SUPER_ADMIN`).
-    *   Secure protected endpoints using method-level security via `@PreAuthorize("hasRole('ADMIN')")` or by specifying endpoint authorization rules in `SecurityFilterChain`.
+    *   Secure protected endpoints using method-level security via `@PreAuthorize("hasRole('ADMIN') or hasRole('SUPER_ADMIN')")` or `@PreAuthorize("isAuthenticated()")`.
+*   **Authentication Context Extraction:**
+    *   Never trust frontend payloads for roles or user identity.
+    *   Always extract user information from the JWT/SecurityContext only.
+    *   For customer self-service actions, retrieve the principal from `SecurityContextHolder.getContext().getAuthentication().getName()` to lookup the user in the database.
 

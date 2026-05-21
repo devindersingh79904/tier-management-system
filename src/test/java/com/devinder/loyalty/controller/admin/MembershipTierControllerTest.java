@@ -1,4 +1,4 @@
-package com.devinder.loyalty.controller;
+package com.devinder.loyalty.controller.admin;
 
 import com.devinder.loyalty.dto.request.CreateMembershipTierRequest;
 import com.devinder.loyalty.dto.request.UpdateMembershipTierRequest;
@@ -28,10 +28,15 @@ import org.springframework.test.web.servlet.MockMvc;
 import java.time.Instant;
 import java.util.Optional;
 
-import static org.hamcrest.Matchers.*;
+import static org.hamcrest.Matchers.greaterThanOrEqualTo;
+import static org.hamcrest.Matchers.hasSize;
+import static org.hamcrest.Matchers.is;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
@@ -93,7 +98,7 @@ public class MembershipTierControllerTest {
                 .isActive(true)
                 .build();
 
-        mockMvc.perform(post("/api/v1/tiers")
+        mockMvc.perform(post("/api/v1/admin/tiers")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(request)))
                 .andExpect(status().isCreated())
@@ -111,7 +116,7 @@ public class MembershipTierControllerTest {
                 .priority(99)
                 .build();
 
-        mockMvc.perform(post("/api/v1/tiers")
+        mockMvc.perform(post("/api/v1/admin/tiers")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(request)))
                 .andExpect(status().isForbidden())
@@ -126,7 +131,7 @@ public class MembershipTierControllerTest {
                 .priority(99)
                 .build();
 
-        mockMvc.perform(post("/api/v1/tiers")
+        mockMvc.perform(post("/api/v1/admin/tiers")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(request)))
                 .andExpect(status().isUnauthorized())
@@ -149,7 +154,7 @@ public class MembershipTierControllerTest {
                 .priority(99)
                 .build();
 
-        mockMvc.perform(post("/api/v1/tiers")
+        mockMvc.perform(post("/api/v1/admin/tiers")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(request)))
                 .andExpect(status().isConflict())
@@ -172,7 +177,7 @@ public class MembershipTierControllerTest {
                 .priority(99)
                 .build();
 
-        mockMvc.perform(post("/api/v1/tiers")
+        mockMvc.perform(post("/api/v1/admin/tiers")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(request)))
                 .andExpect(status().isConflict())
@@ -197,7 +202,7 @@ public class MembershipTierControllerTest {
                 .isActive(false)
                 .build();
 
-        mockMvc.perform(put("/api/v1/tiers/" + existing.getId())
+        mockMvc.perform(put("/api/v1/admin/tiers/" + existing.getId())
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(request)))
                 .andExpect(status().isOk())
@@ -251,7 +256,7 @@ public class MembershipTierControllerTest {
                 .build();
         existing = membershipTierRepository.save(existing);
 
-        mockMvc.perform(delete("/api/v1/tiers/" + existing.getId()))
+        mockMvc.perform(delete("/api/v1/admin/tiers/" + existing.getId()))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.status", is(200)));
 
@@ -307,7 +312,7 @@ public class MembershipTierControllerTest {
         userMembershipRepository.save(membership);
 
         // Attempt soft-deleting tier
-        mockMvc.perform(delete("/api/v1/tiers/" + tier.getId()))
+        mockMvc.perform(delete("/api/v1/admin/tiers/" + tier.getId()))
                 .andExpect(status().isConflict())
                 .andExpect(jsonPath("$.status", is(409)))
                 .andExpect(jsonPath("$.message", is("Cannot deactivate tier because active memberships exist")));

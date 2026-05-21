@@ -1,4 +1,4 @@
-package com.devinder.loyalty.controller;
+package com.devinder.loyalty.controller.auth;
 
 import com.devinder.loyalty.dto.request.LoginRequest;
 import com.devinder.loyalty.dto.request.SignupRequest;

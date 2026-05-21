@@ -32,6 +32,46 @@ public class OpenApiConfig {
                                 .bearerFormat("JWT")));
     }
 
+    @Bean
+    public org.springdoc.core.models.GroupedOpenApi authApi() {
+        return org.springdoc.core.models.GroupedOpenApi.builder()
+                .group("Authentication APIs")
+                .pathsToMatch("/api/v1/auth/**")
+                .build();
+    }
+
+    @Bean
+    public org.springdoc.core.models.GroupedOpenApi adminTierApi() {
+        return org.springdoc.core.models.GroupedOpenApi.builder()
+                .group("Admin Tier APIs")
+                .pathsToMatch("/api/v1/admin/tiers/**")
+                .build();
+    }
+
+    @Bean
+    public org.springdoc.core.models.GroupedOpenApi adminPlanApi() {
+        return org.springdoc.core.models.GroupedOpenApi.builder()
+                .group("Admin Plan APIs")
+                .pathsToMatch("/api/v1/admin/plans/**")
+                .build();
+    }
+
+    @Bean
+    public org.springdoc.core.models.GroupedOpenApi adminMembershipApi() {
+        return org.springdoc.core.models.GroupedOpenApi.builder()
+                .group("Admin Membership APIs")
+                .pathsToMatch("/api/v1/admin/memberships/**")
+                .build();
+    }
+
+    @Bean
+    public org.springdoc.core.models.GroupedOpenApi userApi() {
+        return org.springdoc.core.models.GroupedOpenApi.builder()
+                .group("User APIs")
+                .pathsToMatch("/api/v1/me/**", "/api/v1/tiers/**")
+                .build();
+    }
+
     /**
      * Add X-Correlation-Id header to OpenAPI/Swagger UI endpoints automatically.
      */
