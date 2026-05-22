@@ -37,7 +37,7 @@ This project implements a highly scalable, concurrency-safe, and audit-friendly 
 
 ## API Endpoints
 
-The Loyalty Tier System APIs are partitioned into Public (Auth), User Self-Service, and Admin groups:
+The Loyalty Tier System REST APIs are partitioned into Public, User Self-Service, and Privileged Admin groups:
 
 ### Public / Authentication APIs
 | Method | Endpoint | Access Control | Description |
@@ -49,19 +49,70 @@ The Loyalty Tier System APIs are partitioned into Public (Auth), User Self-Servi
 | Method | Endpoint | Access Control | Description |
 | :--- | :--- | :--- | :--- |
 | **GET** | `/api/v1/me/profile` | `isAuthenticated()` | Retrieve details of the currently authenticated user. |
-| **GET** | `/api/v1/me/memberships` | `isAuthenticated()` | Retrieve all memberships for the logged-in user context. |
-| **GET** | `/api/v1/tiers` | `isAuthenticated()` | List active membership tiers paginated (supports `page`, `size`, `sort`). |
+| **GET** | `/api/v1/me/memberships` | `isAuthenticated()` | Retrieve the active membership for the logged-in user context. |
+| **POST** | `/api/v1/me/memberships` | `isAuthenticated()` | Customer self-subscription to an active plan & tier. |
+| **GET** | `/api/v1/me/memberships/history` | `isAuthenticated()` | Retrieve full membership history of the authenticated user. |
+| **GET** | `/api/v1/me/memberships/benefits` | `isAuthenticated()` | Dynamically resolve and merge active benefit configurations for the user. |
+| **GET** | `/api/v1/plans` | `isAuthenticated()` | List active membership plans paginated. |
+| **GET** | `/api/v1/plans/{id}` | `isAuthenticated()` | Retrieve a specific active membership plan by ID. |
+| **GET** | `/api/v1/tiers` | `isAuthenticated()` | List active membership tiers paginated. |
 | **GET** | `/api/v1/tiers/{id}` | `isAuthenticated()` | Retrieve a specific membership tier by UUID. |
 
-### Privileged Admin APIs
-| Method | Endpoint | Access Control | Description |
-| :--- | :--- | :--- | :--- |
-| **POST** | `/api/v1/admin/tiers` | `ADMIN` / `SUPER_ADMIN` | Create a new membership tier. Requires unique name/priority. |
-| **PUT** | `/api/v1/admin/tiers/{id}` | `ADMIN` / `SUPER_ADMIN` | Update details of a tier. Enforces uniqueness. |
-| **DELETE** | `/api/v1/admin/tiers/{id}` | `ADMIN` / `SUPER_ADMIN` | Soft delete/deactivate a tier. Blocked if active memberships exist. |
-| **POST** | `/api/v1/admin/plans` | `ADMIN` / `SUPER_ADMIN` | Create a new billing plan with a unique name. |
-| **GET** | `/api/v1/admin/plans` | `ADMIN` / `SUPER_ADMIN` | List all available billing plans. |
-| **GET** | `/api/v1/admin/memberships` | `ADMIN` / `SUPER_ADMIN` | List all user membership records in the system. |
+### Privileged Admin APIs (Required Role: `ADMIN` or `SUPER_ADMIN`)
+
+#### 1. Membership Tiers
+| Method | Endpoint | Description |
+| :--- | :--- | :--- |
+| **POST** | `/api/v1/admin/tiers` | Create a new membership tier. Requires unique name/priority. |
+| **PUT** | `/api/v1/admin/tiers/{id}` | Update details of a tier. Enforces uniqueness. |
+| **DELETE** | `/api/v1/admin/tiers/{id}` | Soft delete/deactivate a tier. Blocked if active memberships exist. |
+| **GET** | `/api/v1/admin/tiers` | List all membership tiers (active & inactive). |
+| **GET** | `/api/v1/admin/tiers/{id}` | Retrieve a specific membership tier details. |
+
+#### 2. Membership Plans
+| Method | Endpoint | Description |
+| :--- | :--- | :--- |
+| **POST** | `/api/v1/admin/plans` | Create a new billing plan. Base prices stored in paise/cents (`Long`). |
+| **PUT** | `/api/v1/admin/plans/{id}` | Update details of a plan. |
+| **DELETE** | `/api/v1/admin/plans/{id}` | Soft delete/deactivate a plan. Blocked if active memberships exist. |
+| **GET** | `/api/v1/admin/plans` | List all billing plans (active & inactive). |
+| **GET** | `/api/v1/admin/plans/{id}` | Retrieve a specific billing plan. |
+
+#### 3. User Memberships
+| Method | Endpoint | Description |
+| :--- | :--- | :--- |
+| **POST** | `/api/v1/admin/memberships` | Manually register a membership for any user. Checks active status of plan/tier. |
+| **GET** | `/api/v1/admin/memberships` | List all user membership records in the system (paginated). |
+| **GET** | `/api/v1/admin/memberships/{id}` | Retrieve detailed membership information. |
+| **PUT** | `/api/v1/admin/memberships/{id}/upgrade` | Upgrade an active membership to a higher priority tier. |
+| **PUT** | `/api/v1/admin/memberships/{id}/cancel` | Cancel an active membership and log audit details. |
+
+#### 4. Membership Benefits Catalog
+| Method | Endpoint | Description |
+| :--- | :--- | :--- |
+| **POST** | `/api/v1/admin/benefits` | Create a new benefit perk (e.g., `FREE_SHIPPING`, `DISCOUNT`). |
+| **PUT** | `/api/v1/admin/benefits/{id}` | Update benefit perk details. |
+| **DELETE** | `/api/v1/admin/benefits/{id}` | Soft delete/deactivate a benefit perk. |
+| **GET** | `/api/v1/admin/benefits` | List all catalog benefit perks. |
+| **GET** | `/api/v1/admin/benefits/{id}` | Retrieve specific benefit details. |
+
+#### 5. Benefit Configurations
+| Method | Endpoint | Description |
+| :--- | :--- | :--- |
+| **POST** | `/api/v1/admin/benefit-configurations` | Define custom plan/tier configs for a benefit using native PostgreSQL JSONB. |
+| **PUT** | `/api/v1/admin/benefit-configurations/{id}` | Update JSONB configuration details. Enforces JSON format verification. |
+| **DELETE** | `/api/v1/admin/benefit-configurations/{id}` | Soft delete/deactivate benefit configuration. |
+| **GET** | `/api/v1/admin/benefit-configurations` | List all benefit configurations. |
+| **GET** | `/api/v1/admin/benefit-configurations/{id}` | Retrieve specific configuration details. |
+
+#### 6. Tier Eligibility Criteria
+| Method | Endpoint | Description |
+| :--- | :--- | :--- |
+| **POST** | `/api/v1/admin/tier-criteria` | Define eligibility JSONB criteria rules (numeric/string comparisons, logical AND/OR). |
+| **PUT** | `/api/v1/admin/tier-criteria/{id}` | Update eligibility criteria rules. Enforces JSON format validation. |
+| **DELETE** | `/api/v1/admin/tier-criteria/{id}` | Soft delete/deactivate tier criteria. |
+| **GET** | `/api/v1/admin/tier-criteria` | List all tier criteria rules. |
+| **GET** | `/api/v1/admin/tier-criteria/{id}` | Retrieve specific tier criteria rules. |
 
 
 ---

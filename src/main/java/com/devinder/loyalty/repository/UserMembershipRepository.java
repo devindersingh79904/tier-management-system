@@ -5,12 +5,18 @@ import com.devinder.loyalty.enums.MembershipStatus;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 
+import java.time.Instant;
 import java.util.List;
 
 @Repository
 public interface UserMembershipRepository extends JpaRepository<UserMembership, String> {
     boolean existsByMembershipTierIdAndStatus(String tierId, MembershipStatus status);
+    boolean existsByMembershipPlanIdAndStatus(String planId, MembershipStatus status);
+    boolean existsByUserIdAndStatus(String userId, MembershipStatus status);
     List<UserMembership> findByMembershipTierNameStartingWith(String prefix);
     List<UserMembership> findByUserId(String userId);
+    List<UserMembership> findByUserIdAndStatus(String userId, MembershipStatus status);
+    List<UserMembership> findByStatus(MembershipStatus status);
+    List<UserMembership> findByEndDateBeforeAndStatus(Instant now, MembershipStatus status);
 }
 

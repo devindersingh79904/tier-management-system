@@ -1,87 +1,90 @@
-# Walkthrough - JPA Entity Layer Implementation
+# Walkthrough - Loyalty Tier System Modules 3 - 7 Implementation
 
-We have successfully designed, implemented, and verified the JPA entity layer for the **Loyalty Tier System** backend. Below is a detailed walkthrough of the changes made, the files created, and the validation results.
-
----
-
-## 1. Summary of Changes
-
-### Configuration & Enums
-- **Compiler Configuration (`pom.xml`):** Moved the MapStruct and Lombok annotation processors to the global configuration level of `maven-compiler-plugin`. This ensures annotation processing runs during both compilation and testing.
-- **Removed Boilerplate:** Removed old `LoyaltyTier` boilerplate controllers, services, repositories, mappers, and enums to establish a clean state and prevent compilation issues from the primary key type change.
-- **Created Enums (`com.devinder.loyalty.enums`):**
-  - `UserRole`: `USER`, `ADMIN`, `SUPER_ADMIN`
-  - `DurationUnit`: `DAY`, `MONTH`, `YEAR`
-  - `CurrencyType`: `USD`, `INR`, `EUR`
-  - `MembershipStatus`: `PENDING`, `ACTIVE`, `CANCELLED`, `EXPIRED`
-  - `MembershipEventType`: `SUBSCRIBED`, `RENEWED`, `UPGRADED`, `DOWNGRADED`, `CANCELLED`, `EXPIRED`
-  - `TransactionType`: `PAYMENT`, `RENEWAL`, `REFUND`, `UPGRADE_CHARGE`, `PARTIAL_REFUND`
-  - `PaymentStatus`: `PENDING`, `SUCCESS`, `FAILED`, `REFUNDED`
+This document provides a comprehensive technical walkthrough of the end-to-end implementation for **Modules 3 to 7** of the **Loyalty Tier System** backend. It describes the architecture, dynamic JSON engines, business logic validations, security boundaries, and validation test results.
 
 ---
 
-## 2. JPA Entity Implementations (`com.devinder.loyalty.entity`)
-
-Every entity inherits from `BaseEntity` and utilizes standard Lombok annotations (`@Getter`, `@Setter`, `@Builder`, `@NoArgsConstructor`, `@AllArgsConstructor`).
-
-1. **`BaseEntity.java` (Modified):**
-    - Refactored `id` from `Long` to `String` (storing standard UUID values generated via JPA 3.1 `GenerationType.UUID` and column length configured to 36).
-   - Maintained `@Version` optimistic lock protection.
-   - Maintained `@EntityListeners(AuditingEntityListener.class)` to automatically set and update `@CreatedDate` and `@LastModifiedDate`.
-
-2. **`User.java` (New):**
-   - Configured with a unique index on `mobile_number`.
-   - Fields: `name`, `mobileNumber`, `passwordHash` (stored using BCrypt hashing; excluded from serialization via `@JsonIgnore`), `role` (enum), and `cohort`.
-
-3. **`MembershipTier.java` (New):**
-   - Designed for dynamic admin configurations using a `String` name.
-   - Configured with a unique index on `name` and an index on `priority`.
-   - Fields: `name`, `priority`, `description`, and `isActive`.
-
-4. **`MembershipPlan.java` (New):**
-   - Fields: `name`, `duration`, `durationUnit` (enum), `basePrice` (Long, representing paise/cents), `currency` (enum), and `isActive`.
-
-5. **`UserMembership.java` (New):**
-   - Configured with indexes on `user_id`, `status`, and `membership_tier_id`.
-   - Relationships: `ManyToOne` with `User`, `MembershipPlan`, and `MembershipTier` using `FetchType.LAZY`.
-   - Fields: `status` (enum), `startDate`, `endDate`, `purchasedPrice`, `discountAmount`, `finalPrice` (all price fields as `Long` cents/paise), and `autoRenew`.
-
-6. **`MembershipBenefit.java` (New):**
-   - Configured with a unique index on `name`.
-   - Fields: `name`, `description`, and `isActive`.
-
-7. **`BenefitConfiguration.java` (New):**
-   - Relationships: `ManyToOne` with `MembershipBenefit`, `MembershipPlan` (nullable), and `MembershipTier` (nullable) using `FetchType.LAZY`.
-   - Fields: `configurationJson` (mapped natively to PostgreSQL `jsonb` using Hibernate 6's `@JdbcTypeCode(SqlTypes.JSON)`) and `isActive`.
-
-8. **`TierCriteria.java` (New):**
-   - Relationships: `ManyToOne` with `MembershipTier` using `FetchType.LAZY`.
-   - Fields: `criteriaJson` (mapped natively to PostgreSQL `jsonb` using `@JdbcTypeCode(SqlTypes.JSON)`) and `isActive`.
-
-9. **`MembershipEvent.java` (New):**
-   - Configured with an index on `created_at` for timeline auditing.
-   - Relationships: `ManyToOne` with `UserMembership` using `FetchType.LAZY`.
-   - Fields: `eventType` (enum), `oldValue`, `newValue`, and `reason`.
-
-10. **`PaymentIntent.java` (New):**
-    - Configured with a unique index on `idempotency_key` (retry-safe prevention of double charging) and an index on `transaction_id`.
-    - Relationships: `ManyToOne` with `UserMembership` using `FetchType.LAZY`.
-    - Fields: `transactionType` (enum), `amount` (Long, cents/paise), `paymentStatus` (enum), `transactionId`, `paymentProvider`, and `idempotencyKey`.
+## 1. Module 3: Membership Plans
+We implemented administrative management of billing plans and customer-facing read-only APIs:
+- **Administrative CRUD:** Allowed complete control over membership plans via `/api/v1/admin/plans`. Protected via `@PreAuthorize("hasRole('ADMIN') or hasRole('SUPER_ADMIN')")`.
+- **Soft Delete Policy:** When a plan is deleted, it is soft-deleted by setting `isActive = false`. We enforce that a plan cannot be deleted or deactivated if it has any active customer memberships, preventing service disruption.
+- **Financial Precision:** Encapsulated plan base prices inside `Long` values representing paise/cents (e.g. ₹49.00 = `4900L`) to prevent floating-point calculation errors.
+- **User APIs:** Exposed `/api/v1/plans` and `/api/v1/plans/{id}` to allow authenticated users to browse available active subscription options.
 
 ---
 
-## 3. Documentation & Verification
+## 2. Module 4: User Memberships
+We built a production-grade membership subscription lifecycle engine including subscriptions, upgrades, cancellations, and auditing:
+- **Natural Idempotency:** We enforce that a customer cannot have overlapping active memberships. If they attempt to self-subscribe while having an active membership, a `ConflictException` is thrown.
+- **State Integrity Validations:** During subscription creation (both Admin and User self-service), the target MembershipPlan and MembershipTier must be active (`isActive = true`). Subscribing to inactive configurations triggers a conflict error.
+- **Upgrades Engine:** Upgrades enforce that the target tier has a strictly higher sorting `priority` than the current active tier. Final prices and dates are recalculated dynamically.
+- **Auditing Trail:** Every transition is tracked by automatically logging transactional details into the `membership_events` table (`SUBSCRIBED`, `UPGRADED`, `CANCELLED`, `EXPIRED`, `RENEWED`).
+- **Scheduled Job Service Hook:** Added a background expiration method `expireMemberships()` that automatically transitions all memberships past their `endDate` from `ACTIVE` to `EXPIRED`.
+- **Transaction Boundaries:** Enforced `@Transactional` boundaries on all membership write, upgrade, and cancellation service flows.
 
-- **Documentation Updates:**
-  - Created [database-design.md](file:///Users/dsp/development/firstclub/loyalty-tier-system/docs/database-design.md) with database entity responsibilities, relationships, indexes, dynamic JSONB explanations, and concurrency strategies.
-  - Updated [README.md](file:///Users/dsp/development/firstclub/loyalty-tier-system/README.md) to document the new entity structure, setup guide, execution steps, and environment variable configuration template.
-- **Build Verification:**
-  - Ran `./mvnw clean test` which successfully compiled all 9 entities, 7 enums, and configurations.
-  - Successfully booted the Spring Context.
-  - Validated physical schema generation in the test PostgreSQL database (log output shows creation of all 9 tables, indexes, constraints, and foreign key relations).
+---
 
-## 4. Code & Configuration Polish
-- **Unused Import Removal:** Removed the unused `import org.springframework.validation.FieldError;` from `GlobalExceptionHandler.java`.
-- **Deprecation Warning Resolution:** Updated the `CorrelationIdFilter.java` to use the non-deprecated `ContentCachingRequestWrapper(HttpServletRequest, int)` constructor with an explicit 1MB limit.
-- **POM Cleanup:** Cleaned up empty XML tags (`<name/>`, `<description/>`, `<url/>`, `<licenses>`, `<developers>`, `<scm>`) from `pom.xml`.
-- **Verification:** Ran `./mvnw clean test` to verify that there are no compilation warnings, no unused import warnings, and that the Spring Boot test context successfully initializes.
+## 3. Module 5: Membership Benefits
+We built a dynamic perks catalog to configure loyalty benefit traits:
+- **Perks Catalog:** Managed catalog items through `/api/v1/admin/benefits` mapping to the `membership_benefits` database schema.
+- **Soft Deactivation:** Deleting a benefit sets `isActive = false` rather than physically removing the database record to preserve historical transaction relations.
+- **Constraint Checks:** Enforced global uniqueness on the benefit `name` field to prevent duplicate configurations.
+
+---
+
+## 4. Module 6: Benefit Configurations & Resolution Engine
+We created an rules engine to assign benefit settings to plans and tiers and resolve them dynamically:
+- **Schema Mapping:** Built configurations mapping specific plans, tiers, or plan-tier intersections to benefit layouts. Configurations are stored natively in PostgreSQL `jsonb` fields.
+- **Jackson Parsing & Validation:** Centralized all Jackson JSON serialization and format checking within a thread-safe `JsonValidationUtil` class, throwing `BadRequestException` on malformed request shapes.
+- **Resolution and Merging Engine:** Implemented a recursive resolving engine (`BenefitResolverService`) that fetches all active benefit configurations matching a user's current plan and tier. When configurations overlap, the system recursively parses and merges the JSON structures, prioritizing plan-tier intersections over standalone definitions.
+
+---
+
+## 5. Module 7: Tier Criteria Rules Engine
+We implemented a dynamic, AST-like evaluation rules engine to evaluate silver, gold, and platinum loyalty tier eligibility:
+- **JSON AST Representation:** Defined loyalty criteria rules using PostgreSQL JSONB schemas mapping operators, fields, values, and composite logical groups (AND, OR).
+- **Recursive Criteria Evaluator:** Developed a tree-traversal logic (`TierEvaluationService`) capable of evaluating client context statistics (e.g., `totalSpent`, `totalOrders`, `isVip`) recursively against nested logic groups.
+- **Integrations Ready:** Structured the rules parser to serve as a direct hook for batch nightly cron jobs to evaluate loyalty upgrades.
+
+---
+
+## 6. Testing & Quality Verification
+
+### Automated Integration & Unit Tests
+We verified the complete business lifecycle, REST contracts, and mappers using a comprehensive, robust test suite:
+- **Tests Added:**
+  - `MembershipPlanServiceTest` & `AdminMembershipPlanControllerTest` & `UserMembershipPlanControllerTest`
+  - `UserMembershipServiceTest` & `AdminMembershipControllerTest` & `UserMembershipControllerTest`
+  - `MembershipBenefitControllerTest`
+  - `BenefitConfigurationControllerTest`
+  - `TierCriteriaControllerTest`
+
+- **Execution Results:**
+  ```text
+  [INFO] Results:
+  [INFO] 
+  [INFO] Tests run: 116, Failures: 0, Errors: 0, Skipped: 0
+  [INFO] 
+  [INFO] ------------------------------------------------------------------------
+  [INFO] BUILD SUCCESS
+  ```
+
+### Checkstyle Conformity Audit
+We enforced strict quality controls on formatting, package hierarchies, constructor injection, and imports:
+- **Audit Results:**
+  ```text
+  [INFO] --- checkstyle:3.6.0:check (default-cli) @ loyalty-tier-system ---
+  [INFO] Starting audit...
+  Audit done.
+  [INFO] You have 0 Checkstyle violations.
+  [INFO] ------------------------------------------------------------------------
+  [INFO] BUILD SUCCESS
+  ```
+
+---
+
+## 7. Architecture & Design Decisions
+1. **Context Lookup Security:** All self-service `/me` endpoints resolve user context dynamically from the security principal username (`mobileNumber`), preventing client-side identity forgery.
+2. **Optimistic Locking:** Utilized `@Version` attributes across JPA mappings to gracefully handle concurrent updates, preventing overwrites on memberships.
+3. **Lazy Fetch Loading:** Configured all entity associations using `FetchType.LAZY` to optimize query performance and completely eliminate N+1 database connection issues.
+4. **MDC Correlation Logging:** Incoming requests cache transaction headers using a unique `X-Correlation-Id`, which is logged across downstream trace lines.

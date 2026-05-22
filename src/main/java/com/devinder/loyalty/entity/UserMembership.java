@@ -26,7 +26,8 @@ import java.time.Instant;
     indexes = {
         @Index(name = "idx_user_memberships_user_id", columnList = "user_id"),
         @Index(name = "idx_user_memberships_status", columnList = "status"),
-        @Index(name = "idx_user_memberships_tier_id", columnList = "membership_tier_id")
+        @Index(name = "idx_user_memberships_tier_id", columnList = "membership_tier_id"),
+        @Index(name = "idx_user_memberships_end_date", columnList = "end_date")
     }
 )
 @Getter

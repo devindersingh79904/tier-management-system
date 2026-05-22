@@ -18,6 +18,14 @@ public class MessageConstants {
     public static final String TIER_UPDATED = "Loyalty tier updated successfully";
     public static final String TIER_DELETED = "Loyalty tier deleted successfully";
 
+    // Membership Benefit operations
+    public static final String BENEFIT_CREATED = "Membership benefit created successfully";
+    public static final String BENEFIT_UPDATED = "Membership benefit updated successfully";
+    public static final String BENEFIT_DELETED = "Membership benefit deleted successfully";
+    public static final String BENEFIT_NAME_EXISTS = "Membership benefit with name '%s' already exists";
+    public static final String BENEFIT_ID_NOT_FOUND = "Membership benefit with ID %s not found";
+    public static final String BENEFIT_HAS_ACTIVE_CONFIGURATIONS = "Cannot deactivate/delete benefit because active configurations exist";
+
     // Exception / Concurrency messages
     public static final String CONFLICT_LOCKING = "The resource was updated by another process. Used optimistic locking to avoid concurrent subscription update conflicts.";
     public static final String TIER_NAME_EXISTS = "Loyalty tier with name '%s' already exists";
