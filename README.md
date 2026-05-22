@@ -4,7 +4,36 @@ The **Loyalty Tier System** is a production-grade Spring Boot 3 application desi
 
 This project implements a highly scalable, concurrency-safe, and audit-friendly JPA entity layer designed for high-performance enterprise applications.
 
+
 ---
+
+## Docker Deployment
+
+A multi-stage `Dockerfile` is included for containerized deployment (works with Render, Railway, Fly.io, etc.).
+
+### Quick Build
+
+```bash
+docker build -t loyalty-tier-system .
+docker run -p 8080:8080 --env-file .env loyalty-tier-system
+```
+
+The `Dockerfile` uses:
+- **Builder:** `maven:3.9-eclipse-temurin-21` — resolves dependencies, compiles, and packages the app.
+- **Runtime:** `eclipse-temurin:21-jre` — minimal JRE image running the packaged JAR.
+
+### Environment Variables
+
+Pass these via `--env-file .env` or your hosting platform's dashboard (see [Environment Variables Example](#environment-variables-example) below for the full list).
+
+| Variable | Description | Required |
+|---|---|---|
+| `DB_URL` | JDBC URL for PostgreSQL | ✅ |
+| `DB_USERNAME` | DB username | ✅ |
+| `DB_PASSWORD` | DB password | ✅ |
+| `JWT_SECRET` | JWT signing secret | ✅ |
+| `SERVER_PORT` | Application port | Optional (default `8080`) |
+| `GLOBAL_SEED_ENABLED` | Seed data on first run | Optional (default `false`) |
 
 ## Features & Architecture
 
