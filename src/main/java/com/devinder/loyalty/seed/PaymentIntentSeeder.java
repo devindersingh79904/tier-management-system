@@ -2,6 +2,7 @@ package com.devinder.loyalty.seed;
 
 import com.devinder.loyalty.entity.PaymentIntent;
 import com.devinder.loyalty.entity.UserMembership;
+import com.devinder.loyalty.enums.PaymentMethod;
 import com.devinder.loyalty.enums.PaymentStatus;
 import com.devinder.loyalty.enums.TransactionType;
 import com.devinder.loyalty.repository.PaymentIntentRepository;
@@ -55,6 +56,7 @@ public class PaymentIntentSeeder {
                     .transactionId(txPrefix + UUID.randomUUID().toString().replace("-", "").substring(0, 14))
                     .paymentProvider(provider)
                     .idempotencyKey(UUID.randomUUID().toString())
+                    .paymentMethod(PaymentMethod.CARD)
                     .build());
             
             index++;

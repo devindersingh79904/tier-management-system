@@ -1,5 +1,6 @@
 package com.devinder.loyalty.entity;
 
+import com.devinder.loyalty.enums.PaymentMethod;
 import com.devinder.loyalty.enums.PaymentStatus;
 import com.devinder.loyalty.enums.TransactionType;
 import jakarta.persistence.Column;
@@ -70,4 +71,10 @@ public class PaymentIntent extends BaseEntity {
     @Size(max = 100)
     @Column(name = "idempotency_key", nullable = false, unique = true, length = 100)
     private String idempotencyKey;
+
+    @NotNull
+    @Enumerated(EnumType.STRING)
+    @Column(name = "payment_method", nullable = false, length = 30)
+    private PaymentMethod paymentMethod;
 }
+
