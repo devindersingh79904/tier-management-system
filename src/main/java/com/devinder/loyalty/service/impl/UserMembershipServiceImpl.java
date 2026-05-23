@@ -2,6 +2,7 @@ package com.devinder.loyalty.service.impl;
 
 import com.devinder.loyalty.dto.request.CancelMembershipRequest;
 import com.devinder.loyalty.dto.request.CreateUserMembershipRequest;
+import com.devinder.loyalty.dto.request.DowngradeMembershipRequest;
 import com.devinder.loyalty.dto.request.UpgradeMembershipRequest;
 import com.devinder.loyalty.dto.response.PageResponse;
 import com.devinder.loyalty.dto.response.UserMembershipResponse;
@@ -12,14 +13,17 @@ import com.devinder.loyalty.entity.User;
 import com.devinder.loyalty.entity.UserMembership;
 import com.devinder.loyalty.enums.MembershipEventType;
 import com.devinder.loyalty.enums.MembershipStatus;
+import com.devinder.loyalty.enums.OrderStatus;
 import com.devinder.loyalty.exception.ConflictException;
 import com.devinder.loyalty.exception.ResourceNotFoundException;
 import com.devinder.loyalty.mapper.UserMembershipMapper;
 import com.devinder.loyalty.repository.MembershipEventRepository;
 import com.devinder.loyalty.repository.MembershipPlanRepository;
 import com.devinder.loyalty.repository.MembershipTierRepository;
+import com.devinder.loyalty.repository.OrderRepository;
 import com.devinder.loyalty.repository.UserMembershipRepository;
 import com.devinder.loyalty.repository.UserRepository;
+import com.devinder.loyalty.service.TierEvaluationService;
 import com.devinder.loyalty.service.UserMembershipService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -28,7 +32,11 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.Instant;
+import java.time.ZoneOffset;
+import java.time.ZonedDateTime;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
 
 @Slf4j
@@ -41,6 +49,8 @@ public class UserMembershipServiceImpl implements UserMembershipService {
     private final MembershipPlanRepository membershipPlanRepository;
     private final MembershipTierRepository membershipTierRepository;
     private final MembershipEventRepository membershipEventRepository;
+    private final OrderRepository orderRepository;
+    private final TierEvaluationService tierEvaluationService;
     private final UserMembershipMapper userMembershipMapper;
 
     @Override
@@ -142,28 +152,59 @@ public class UserMembershipServiceImpl implements UserMembershipService {
                 .orElseThrow(() -> new ResourceNotFoundException("Membership not found with id: " + id));
 
         if (membership.getStatus() != MembershipStatus.ACTIVE) {
-            throw new ConflictException("Cannot upgrade a membership that is not ACTIVE");
+            throw new ConflictException("Cannot change tier of a membership that is not ACTIVE");
         }
 
         MembershipTier newTier = membershipTierRepository.findById(request.getMembershipTierId())
                 .orElseThrow(() -> new ResourceNotFoundException("Membership tier not found with id: " + request.getMembershipTierId()));
 
         if (!Boolean.TRUE.equals(newTier.getIsActive())) {
-            throw new ConflictException("Cannot upgrade to an inactive membership tier");
+            throw new ConflictException("Cannot change to an inactive membership tier");
         }
 
         if (newTier.getPriority() <= membership.getMembershipTier().getPriority()) {
-            throw new ConflictException("Target tier must have a higher priority than current tier");
+            throw new ConflictException("Target tier must have a higher priority than current tier for upgrade");
         }
 
+        return changeTier(membership, newTier, MembershipEventType.UPGRADED);
+    }
+
+    @Override
+    @Transactional
+    public UserMembershipResponse downgradeMembership(String id, DowngradeMembershipRequest request) {
+        log.info("Attempting to downgrade membership. membershipId: {}, targetTierId: {}", id, request.getMembershipTierId());
+
+        UserMembership membership = userMembershipRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Membership not found with id: " + id));
+
+        if (membership.getStatus() != MembershipStatus.ACTIVE) {
+            throw new ConflictException("Cannot change tier of a membership that is not ACTIVE");
+        }
+
+        MembershipTier newTier = membershipTierRepository.findById(request.getMembershipTierId())
+                .orElseThrow(() -> new ResourceNotFoundException("Membership tier not found with id: " + request.getMembershipTierId()));
+
+        if (!Boolean.TRUE.equals(newTier.getIsActive())) {
+            throw new ConflictException("Cannot change to an inactive membership tier");
+        }
+
+        if (newTier.getPriority() >= membership.getMembershipTier().getPriority()) {
+            throw new ConflictException("Target tier must have a lower priority than current tier for downgrade");
+        }
+
+        return changeTier(membership, newTier, MembershipEventType.DOWNGRADED);
+    }
+
+    private UserMembershipResponse changeTier(UserMembership membership, MembershipTier newTier, MembershipEventType eventType) {
         String oldTierName = membership.getMembershipTier().getName();
         membership.setMembershipTier(newTier);
         UserMembership saved = userMembershipRepository.save(membership);
 
-        log.info("Membership upgraded. userId: {}, membershipId: {}, oldTier: {}, newTier: {}", 
-                membership.getUser().getId(), saved.getId(), oldTierName, newTier.getName());
+        log.info("Membership tier changed. userId: {}, membershipId: {}, oldTier: {}, newTier: {}, eventType: {}", 
+                membership.getUser().getId(), saved.getId(), oldTierName, newTier.getName(), eventType);
 
-        saveMembershipEvent(saved, MembershipEventType.UPGRADED, oldTierName, newTier.getName(), "Membership upgraded");
+        saveMembershipEvent(saved, eventType, oldTierName, newTier.getName(),
+                eventType == MembershipEventType.UPGRADED ? "Membership upgraded" : "Membership downgraded");
 
         return userMembershipMapper.toResponse(saved);
     }
@@ -206,6 +247,112 @@ public class UserMembershipServiceImpl implements UserMembershipService {
     }
 
     @Override
+    @Transactional
+    public void autoRenewMemberships() {
+        log.info("Running automatic membership renewal routine");
+        Instant now = Instant.now();
+        // Find active memberships with autoRenew enabled that are expiring within the next day
+        List<UserMembership> renewals = userMembershipRepository.findByAutoRenewAndEndDateBetweenAndStatus(
+                true, now, now.plusSeconds(86400), MembershipStatus.ACTIVE);
+
+        for (UserMembership membership : renewals) {
+            log.info("Auto-renewing membership. userId: {}, membershipId: {}", membership.getUser().getId(), membership.getId());
+            MembershipPlan plan = membership.getMembershipPlan();
+            Instant newStartDate = membership.getEndDate();
+            Instant newEndDate = calculateEndDate(newStartDate, plan.getDuration(), plan.getDurationUnit());
+
+            membership.setStartDate(newStartDate);
+            membership.setEndDate(newEndDate);
+            UserMembership saved = userMembershipRepository.save(membership);
+            saveMembershipEvent(saved, MembershipEventType.RENEWED,
+                    MembershipStatus.ACTIVE.name(), MembershipStatus.ACTIVE.name(), "Auto-renewal");
+        }
+    }
+
+    @Override
+    @Transactional
+    public void evaluateTiers() {
+        log.info("Running automatic tier evaluation routine");
+        List<UserMembership> activeMemberships = userMembershipRepository.findByStatus(MembershipStatus.ACTIVE);
+
+        for (UserMembership membership : activeMemberships) {
+            try {
+                String userId = membership.getUser().getId();
+                String cohort = membership.getUser().getCohort();
+
+                // Build context with order stats and cohort data
+                Map<String, Object> context = buildEvaluationContext(membership);
+
+                // Evaluate eligibility for the current tier's criteria
+                String currentTierId = membership.getMembershipTier().getId();
+                boolean meetsCurrentCriteria = tierEvaluationService.evaluateEligibility(currentTierId, context);
+
+                if (!meetsCurrentCriteria) {
+                    // Check lower tiers for demotion eligibility
+                    List<MembershipTier> lowerTiers = membershipTierRepository
+                            .findByPriorityLessThanAndIsActiveTrueOrderByPriorityDesc(
+                                    membership.getMembershipTier().getPriority());
+
+                    for (MembershipTier lowerTier : lowerTiers) {
+                        if (tierEvaluationService.evaluateEligibility(lowerTier.getId(), context)) {
+                            membership.setMembershipTier(lowerTier);
+                            UserMembership saved = userMembershipRepository.save(membership);
+                            saveMembershipEvent(saved, MembershipEventType.DOWNGRADED,
+                                    currentTierId, lowerTier.getId(), "Automatic tier evaluation - demotion");
+                            log.info("Membership demoted. userId: {}, membershipId: {}, oldTier: {}, newTier: {}",
+                                    userId, saved.getId(), currentTierId, lowerTier.getId());
+                            break;
+                        }
+                    }
+                } else {
+                    // Check higher tiers for promotion eligibility
+                    List<MembershipTier> higherTiers = membershipTierRepository
+                            .findByPriorityGreaterThanAndIsActiveTrueOrderByPriorityAsc(
+                                    membership.getMembershipTier().getPriority());
+
+                    for (MembershipTier higherTier : higherTiers) {
+                        if (tierEvaluationService.evaluateEligibility(higherTier.getId(), context)) {
+                            membership.setMembershipTier(higherTier);
+                            UserMembership saved = userMembershipRepository.save(membership);
+                            saveMembershipEvent(saved, MembershipEventType.UPGRADED,
+                                    currentTierId, higherTier.getId(), "Automatic tier evaluation - promotion");
+                            log.info("Membership promoted. userId: {}, membershipId: {}, oldTier: {}, newTier: {}",
+                                    userId, saved.getId(), currentTierId, higherTier.getId());
+                            break;
+                        }
+                    }
+                }
+            } catch (Exception e) {
+                log.error("Error during tier evaluation for membership: {}", membership.getId(), e);
+            }
+        }
+    }
+
+    private Map<String, Object> buildEvaluationContext(UserMembership membership) {
+        Map<String, Object> context = new HashMap<>();
+        String userId = membership.getUser().getId();
+
+        // Count successful orders in the last 12 months
+        Instant now = Instant.now();
+        Instant twelveMonthsAgo = now.atZone(ZoneOffset.UTC).minusMonths(12).toInstant();
+        long orderCount = orderRepository.countByUserIdAndStatusAndOrderDateBetween(
+                userId, OrderStatus.SUCCESSFUL, twelveMonthsAgo, now);
+        long totalOrderValue = orderRepository.sumTotalAmountByUserIdAndStatusAndOrderDateBetween(
+                userId, OrderStatus.SUCCESSFUL, twelveMonthsAgo, now);
+
+        context.put("orderCount", orderCount);
+        context.put("totalOrderValue", totalOrderValue);
+
+        // Add cohort if present
+        String cohort = membership.getUser().getCohort();
+        if (cohort != null && !cohort.isBlank()) {
+            context.put("cohort", cohort);
+        }
+
+        return context;
+    }
+
+    @Override
     @Transactional(readOnly = true)
     public List<UserMembershipResponse> getMyMembershipsHistory(String username) {
         log.info("Fetching membership history for mobile: {}", username);
@@ -236,7 +383,7 @@ public class UserMembershipServiceImpl implements UserMembershipService {
     }
 
     private Instant calculateEndDate(Instant start, int duration, com.devinder.loyalty.enums.DurationUnit unit) {
-        java.time.ZonedDateTime zdt = start.atZone(java.time.ZoneOffset.UTC);
+        ZonedDateTime zdt = start.atZone(ZoneOffset.UTC);
         switch (unit) {
             case DAY:
                 zdt = zdt.plusDays(duration);

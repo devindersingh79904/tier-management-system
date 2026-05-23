@@ -18,5 +18,6 @@ public interface UserMembershipRepository extends JpaRepository<UserMembership, 
     List<UserMembership> findByUserIdAndStatus(String userId, MembershipStatus status);
     List<UserMembership> findByStatus(MembershipStatus status);
     List<UserMembership> findByEndDateBeforeAndStatus(Instant now, MembershipStatus status);
+    List<UserMembership> findByAutoRenewAndEndDateBetweenAndStatus(boolean autoRenew, Instant start, Instant end, MembershipStatus status);
 }
 
