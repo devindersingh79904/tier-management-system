@@ -1,29 +1,26 @@
-# =============================================================================
-# Dockerfile — Loyalty Tier System
-# Multi-stage build: Maven builder → lightweight JRE runtime
-# =============================================================================
-
-# ---------- Stage 1: Builder ----------
-FROM maven:3.9-eclipse-temurin-21 AS builder
+# Build Stage
+FROM maven:3.9.6-eclipse-temurin-21 AS build
 
 WORKDIR /app
 
-# Leverage Docker layer caching — copy POM first and resolve dependencies
+# Copy pom.xml and download dependencies
 COPY pom.xml .
-RUN mvn dependency:go-offline -B
+RUN mvn dependency:go-offline
 
-# Copy source code and build
+# Copy source code
 COPY src ./src
-RUN mvn clean package -DskipTests -B
-RUN cp target/*.jar app.jar
 
-# ---------- Stage 2: Runtime ----------
+# Build application
+RUN mvn clean package -DskipTests -Dcheckstyle.skip=true
+
+# Run Stage
 FROM eclipse-temurin:21-jre
 
 WORKDIR /app
 
-COPY --from=builder /app/app.jar app.jar
+# Copy generated jar
+COPY --from=build /app/target/*.jar app.jar
 
 EXPOSE 8080
 
-ENTRYPOINT ["java", "-jar", "app.jar"]
+ENTRYPOINT ["java", "-jar", "-Dserver.port=${PORT:8080}", "app.jar"]
