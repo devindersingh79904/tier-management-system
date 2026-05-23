@@ -10,9 +10,12 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+
+import java.util.Collections;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
-import java.util.Optional;
+
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
 
@@ -45,7 +48,7 @@ public class TierEvaluationServiceTest {
     @Test
     void evaluateEligibility_NoActiveCriteria_ReturnsFalse() {
         when(tierCriteriaRepository.findByMembershipTierIdAndIsActiveTrue("tier-123"))
-                .thenReturn(Optional.empty());
+                .thenReturn(Collections.emptyList());
 
         boolean eligible = tierEvaluationService.evaluateEligibility("tier-123", context);
 
@@ -56,7 +59,7 @@ public class TierEvaluationServiceTest {
     void evaluateEligibility_SimpleEqualsRule_Success() {
         criteria.setCriteriaJson("{\"field\": \"isVip\", \"operator\": \"EQUALS\", \"value\": true}");
         when(tierCriteriaRepository.findByMembershipTierIdAndIsActiveTrue("tier-123"))
-                .thenReturn(Optional.of(criteria));
+                .thenReturn(List.of(criteria));
 
         context.put("isVip", true);
         assertTrue(tierEvaluationService.evaluateEligibility("tier-123", context));
@@ -69,7 +72,7 @@ public class TierEvaluationServiceTest {
     void evaluateEligibility_NumericGreaterThanRule_Success() {
         criteria.setCriteriaJson("{\"field\": \"totalSpent\", \"operator\": \"GREATER_THAN_OR_EQUAL\", \"value\": 10000}");
         when(tierCriteriaRepository.findByMembershipTierIdAndIsActiveTrue("tier-123"))
-                .thenReturn(Optional.of(criteria));
+                .thenReturn(List.of(criteria));
 
         context.put("totalSpent", 12000L);
         assertTrue(tierEvaluationService.evaluateEligibility("tier-123", context));
@@ -88,7 +91,7 @@ public class TierEvaluationServiceTest {
                 "  ]" +
                 "}");
         when(tierCriteriaRepository.findByMembershipTierIdAndIsActiveTrue("tier-123"))
-                .thenReturn(Optional.of(criteria));
+                .thenReturn(List.of(criteria));
 
         context.put("totalSpent", 12000L);
         context.put("totalOrders", 6);
@@ -115,7 +118,7 @@ public class TierEvaluationServiceTest {
                 "  ]" +
                 "}");
         when(tierCriteriaRepository.findByMembershipTierIdAndIsActiveTrue("tier-123"))
-                .thenReturn(Optional.of(criteria));
+                .thenReturn(List.of(criteria));
 
         // VIP only
         context.put("isVip", true);
@@ -133,6 +136,31 @@ public class TierEvaluationServiceTest {
         context.put("isVip", false);
         context.put("totalSpent", 8000L);
         context.put("totalOrders", 6);
+        assertFalse(tierEvaluationService.evaluateEligibility("tier-123", context));
+    }
+
+    @Test
+    void evaluateEligibility_MultipleCriteriaSet_OrLogic_Success() {
+        TierCriteria criteria2 = TierCriteria.builder()
+                .membershipTier(tier)
+                .criteriaJson("{\"field\": \"cohort\", \"operator\": \"EQUALS\", \"value\": \"VIP\"}")
+                .isActive(true)
+                .build();
+
+        when(tierCriteriaRepository.findByMembershipTierIdAndIsActiveTrue("tier-123"))
+                .thenReturn(List.of(criteria, criteria2));
+
+        // First criteria: simple equals
+        criteria.setCriteriaJson("{\"field\": \"totalSpent\", \"operator\": \"GREATER_THAN_OR_EQUAL\", \"value\": 10000}");
+
+        // Should match via cohort criteria even though totalSpent is low
+        context.put("totalSpent", 5000L);
+        context.put("cohort", "VIP");
+        assertTrue(tierEvaluationService.evaluateEligibility("tier-123", context));
+
+        // Neither matches
+        context.put("totalSpent", 5000L);
+        context.put("cohort", "REGULAR");
         assertFalse(tierEvaluationService.evaluateEligibility("tier-123", context));
     }
 }

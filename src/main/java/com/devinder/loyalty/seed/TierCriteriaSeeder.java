@@ -43,7 +43,14 @@ public class TierCriteriaSeeder {
         silverOpt.ifPresent(tier -> {
             criteriaList.add(TierCriteria.builder()
                     .membershipTier(tier)
-                    .criteriaJson("{\"operator\":\"AND\",\"rules\":[{\"field\":\"min_orders\",\"condition\":\">=\",\"value\":0}]}")
+                    .criteriaJson("{" +
+                            "\"operator\":\"AND\"," +
+                            "\"rules\":[{" +
+                            "\"field\":\"orderCount\"," +
+                            "\"operator\":\"GREATER_THAN_OR_EQUAL\"," +
+                            "\"value\":0" +
+                            "}]" +
+                            "}")
                     .isActive(true)
                     .build());
         });
@@ -52,7 +59,18 @@ public class TierCriteriaSeeder {
         goldOpt.ifPresent(tier -> {
             criteriaList.add(TierCriteria.builder()
                     .membershipTier(tier)
-                    .criteriaJson("{\"operator\":\"AND\",\"rules\":[{\"field\":\"min_orders\",\"condition\":\">=\",\"value\":5},{\"field\":\"min_spend\",\"condition\":\">=\",\"value\":150000}]}")
+                    .criteriaJson("{" +
+                            "\"operator\":\"AND\"," +
+                            "\"rules\":[{" +
+                            "\"field\":\"orderCount\"," +
+                            "\"operator\":\"GREATER_THAN_OR_EQUAL\"," +
+                            "\"value\":5" +
+                            "},{" +
+                            "\"field\":\"totalOrderValue\"," +
+                            "\"operator\":\"GREATER_THAN_OR_EQUAL\"," +
+                            "\"value\":150000" +
+                            "}]" +
+                            "}")
                     .isActive(true)
                     .build());
         });
@@ -61,7 +79,61 @@ public class TierCriteriaSeeder {
         platinumOpt.ifPresent(tier -> {
             criteriaList.add(TierCriteria.builder()
                     .membershipTier(tier)
-                    .criteriaJson("{\"operator\":\"AND\",\"rules\":[{\"field\":\"min_orders\",\"condition\":\">=\",\"value\":10},{\"field\":\"min_spend\",\"condition\":\">=\",\"value\":500000}]}")
+                    .criteriaJson("{" +
+                            "\"operator\":\"AND\"," +
+                            "\"rules\":[{" +
+                            "\"field\":\"orderCount\"," +
+                            "\"operator\":\"GREATER_THAN_OR_EQUAL\"," +
+                            "\"value\":10" +
+                            "},{" +
+                            "\"field\":\"totalOrderValue\"," +
+                            "\"operator\":\"GREATER_THAN_OR_EQUAL\"," +
+                            "\"value\":500000" +
+                            "}]" +
+                            "}")
+                    .isActive(true)
+                    .build());
+        });
+
+        // Cohort-based eligibility: VIP cohort users qualify for GOLD directly
+        // This uses OR logic: if cohort matches OR order criteria met
+        Optional<MembershipTier> goldCohortOpt = membershipTierRepository.findByName("GOLD");
+        goldCohortOpt.ifPresent(tier -> {
+            criteriaList.add(TierCriteria.builder()
+                    .membershipTier(tier)
+                    .criteriaJson("{" +
+                            "\"operator\":\"OR\"," +
+                            "\"rules\":[{" +
+                            "\"field\":\"cohort\"," +
+                            "\"operator\":\"EQUALS\"," +
+                            "\"value\":\"VIP\"" +
+                            "},{" +
+                            "\"field\":\"orderCount\"," +
+                            "\"operator\":\"GREATER_THAN_OR_EQUAL\"," +
+                            "\"value\":5" +
+                            "}]" +
+                            "}")
+                    .isActive(true)
+                    .build());
+        });
+
+        // Platinum cohort: VIP cohort with high spending qualifies for Platinum
+        Optional<MembershipTier> platinumCohortOpt = membershipTierRepository.findByName("PLATINUM");
+        platinumCohortOpt.ifPresent(tier -> {
+            criteriaList.add(TierCriteria.builder()
+                    .membershipTier(tier)
+                    .criteriaJson("{" +
+                            "\"operator\":\"AND\"," +
+                            "\"rules\":[{" +
+                            "\"field\":\"cohort\"," +
+                            "\"operator\":\"EQUALS\"," +
+                            "\"value\":\"VIP\"" +
+                            "},{" +
+                            "\"field\":\"totalOrderValue\"," +
+                            "\"operator\":\"GREATER_THAN_OR_EQUAL\"," +
+                            "\"value\":200000" +
+                            "}]" +
+                            "}")
                     .isActive(true)
                     .build());
         });
@@ -69,6 +141,6 @@ public class TierCriteriaSeeder {
         if (!criteriaList.isEmpty()) {
             tierCriteriaRepository.saveAll(criteriaList);
         }
-        log.info("Tier criteria seeding completed.");
+        log.info("Tier criteria seeding completed with {} criteria sets.", criteriaList.size());
     }
 }

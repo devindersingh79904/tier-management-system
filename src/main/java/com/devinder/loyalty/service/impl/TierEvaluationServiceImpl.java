@@ -9,8 +9,9 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+
+import java.util.List;
 import java.util.Map;
-import java.util.Optional;
 
 @Slf4j
 @Service
@@ -25,19 +26,27 @@ public class TierEvaluationServiceImpl implements TierEvaluationService {
     public boolean evaluateEligibility(String tierId, Map<String, Object> contextParameters) {
         log.info("Evaluating eligibility for tier ID: {} with context: {}", tierId, contextParameters);
 
-        Optional<TierCriteria> criteriaOpt = tierCriteriaRepository.findByMembershipTierIdAndIsActiveTrue(tierId);
-        if (criteriaOpt.isEmpty()) {
+        List<TierCriteria> criteriaList = tierCriteriaRepository.findByMembershipTierIdAndIsActiveTrue(tierId);
+        if (criteriaList.isEmpty()) {
             log.info("No active eligibility criteria defined for tier ID: {}", tierId);
             return false;
         }
 
-        try {
-            JsonNode rootNode = OBJECT_MAPPER.readTree(criteriaOpt.get().getCriteriaJson());
-            return evaluateNode(rootNode, contextParameters);
-        } catch (Exception e) {
-            log.error("Failed to parse or evaluate criteria JSON for tier ID: {}", tierId, e);
-            return false;
+        // Evaluate all criteria sets with OR logic — any matching set is sufficient
+        for (TierCriteria criteria : criteriaList) {
+            try {
+                JsonNode rootNode = OBJECT_MAPPER.readTree(criteria.getCriteriaJson());
+                if (evaluateNode(rootNode, contextParameters)) {
+                    log.info("Tier ID: {} eligibility criteria matched: {}", tierId, criteria.getCriteriaJson());
+                    return true;
+                }
+            } catch (Exception e) {
+                log.error("Failed to parse or evaluate criteria JSON for tier ID: {}", tierId, e);
+            }
         }
+
+        log.info("Tier ID: {} — no criteria set matched", tierId);
+        return false;
     }
 
     private boolean evaluateNode(JsonNode node, Map<String, Object> context) {
