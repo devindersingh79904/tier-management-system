@@ -4,6 +4,21 @@ The **Loyalty Tier System** is a production-grade Spring Boot 3 application desi
 
 This project implements a highly scalable, concurrency-safe, and audit-friendly JPA entity layer designed for high-performance enterprise applications.
 
+---
+
+## Live Demo
+
+The application is deployed on Render and can be accessed here:
+
+Swagger UI:
+https://tier-management-system.onrender.com/swagger-ui.html
+
+### Important Note
+
+The application is hosted on Render's free tier.
+If the instance has been inactive for some time, the first request may take around 30–60 seconds because the server wakes up from sleep mode.
+
+Please wait briefly if the APIs do not respond immediately.
 
 ---
 
@@ -82,6 +97,9 @@ The Loyalty Tier System REST APIs are partitioned into Public, User Self-Service
 | **POST** | `/api/v1/me/memberships` | `isAuthenticated()` | Customer self-subscription to an active plan & tier. |
 | **GET** | `/api/v1/me/memberships/history` | `isAuthenticated()` | Retrieve full membership history of the authenticated user. |
 | **GET** | `/api/v1/me/memberships/benefits` | `isAuthenticated()` | Dynamically resolve and merge active benefit configurations for the user. |
+| **PUT** | `/api/v1/me/memberships/{id}/upgrade` | `isAuthenticated()` | Upgrade active membership to a higher tier. |
+| **PUT** | `/api/v1/me/memberships/{id}/downgrade` | `isAuthenticated()` | Downgrade active membership to a lower tier. |
+| **PUT** | `/api/v1/me/memberships/{id}/cancel` | `isAuthenticated()` | Cancel active membership. |
 | **GET** | `/api/v1/plans` | `isAuthenticated()` | List active membership plans paginated. |
 | **GET** | `/api/v1/plans/{id}` | `isAuthenticated()` | Retrieve a specific active membership plan by ID. |
 | **GET** | `/api/v1/tiers` | `isAuthenticated()` | List active membership tiers paginated. |
@@ -255,5 +273,3 @@ Refer to the following detailed guides for design decisions, standards, and arch
 - [API Guidelines - Authentication & Authorization](file:///Users/dsp/development/firstclub/loyalty-tier-system/docs/api-guidelines.md)
 - [Role Access Matrix](file:///Users/dsp/development/firstclub/loyalty-tier-system/docs/role-access-matrix.md)
 - [Security Guide](file:///Users/dsp/development/firstclub/loyalty-tier-system/docs/security-guide.md)
-
-
